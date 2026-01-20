@@ -85,12 +85,12 @@ function EntryForm() {
     setIsSubmitting(true);
     try {
       await api.submitResult({
-        discipline_id: parseInt(selectedDiscipline),
-        group_id: parseInt(selectedGroup),
+        discipline_id: selectedDiscipline,
+        group_id: selectedGroup,
         value: parseFloat(value)
       });
 
-      const group = groups.find(g => g.id === parseInt(selectedGroup));
+      const group = groups.find(g => g.id === selectedGroup);
       showMessage(`Gespeichert: ${group?.name} ${group?.color} = ${value}`);
 
       // Formular zurücksetzen für nächste Eingabe
@@ -111,16 +111,16 @@ function EntryForm() {
   // Prüfen ob Gruppe bereits ein Resultat für diesen Posten hat
   const hasResult = (groupId) => {
     return results.some(
-      r => r.group_id === groupId && r.discipline_id === parseInt(selectedDiscipline)
+      r => r.group_id === groupId && r.discipline_id === selectedDiscipline
     );
   };
 
   // Aktuelle Disziplin-Daten
-  const currentDiscipline = disciplines.find(d => d.id === parseInt(selectedDiscipline));
+  const currentDiscipline = disciplines.find(d => d.id === selectedDiscipline);
 
   // Letzte Einträge für diesen Posten
   const recentForDiscipline = results
-    .filter(r => r.discipline_id === parseInt(selectedDiscipline))
+    .filter(r => r.discipline_id === selectedDiscipline)
     .slice(0, 5);
 
   // Schritt 1: Posten wählen
