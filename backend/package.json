@@ -1,0 +1,16 @@
+{
+  "name": "sporttag-backend",
+  "version": "1.0.0",
+  "description": "Backend für Sporttag-Auswertung",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
