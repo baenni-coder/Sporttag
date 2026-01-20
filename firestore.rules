@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sporttag-Daten - öffentlich zugänglich (für Schulanlass)
+    // HINWEIS: Für sensiblere Daten sollte Authentifizierung hinzugefügt werden
+
+    // Konfiguration - jeder kann lesen, nur Admin schreiben
+    // (ohne Auth ist dies vorerst offen)
+    match /config/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Disziplinen - jeder kann lesen, nur Admin schreiben
+    match /disciplines/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Gruppen - jeder kann lesen, nur Admin schreiben
+    match /groups/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Resultate - jeder kann lesen und schreiben (Postenverantwortliche)
+    match /results/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

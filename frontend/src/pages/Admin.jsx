@@ -164,7 +164,7 @@ function Admin() {
   };
 
   const filteredResults = results.filter(r => {
-    if (resultsFilter.discipline && r.discipline_id !== parseInt(resultsFilter.discipline)) return false;
+    if (resultsFilter.discipline && r.discipline_id !== resultsFilter.discipline) return false;
     if (resultsFilter.color && r.group_color !== resultsFilter.color) return false;
     return true;
   });
