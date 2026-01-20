@@ -6,11 +6,14 @@ function Admin() {
   const [config, setConfig] = useState({ event_name: '', event_date: '', colors: [] });
   const [disciplines, setDisciplines] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [results, setResults] = useState([]);
   const [newDiscipline, setNewDiscipline] = useState({ name: '', unit: '', higher_is_better: true });
   const [newGroup, setNewGroup] = useState({ name: '', color: '' });
   const [bulkGroups, setBulkGroups] = useState('');
   const [newColor, setNewColor] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [resultsFilter, setResultsFilter] = useState({ discipline: '', color: '' });
+  const [editingResult, setEditingResult] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -18,14 +21,16 @@ function Admin() {
 
   const loadData = async () => {
     try {
-      const [configData, disciplinesData, groupsData] = await Promise.all([
+      const [configData, disciplinesData, groupsData, resultsData] = await Promise.all([
         api.getConfig(),
         api.getDisciplines(),
-        api.getGroups()
+        api.getGroups(),
+        api.getResults()
       ]);
       setConfig(configData);
       setDisciplines(disciplinesData);
       setGroups(groupsData);
+      setResults(resultsData);
     } catch (err) {
       showMessage('Fehler beim Laden der Daten', 'error');
     }
@@ -131,6 +136,38 @@ function Admin() {
       showMessage(err.message, 'error');
     }
   };
+
+  const handleUpdateResult = async (result) => {
+    try {
+      await api.submitResult({
+        group_id: result.group_id,
+        discipline_id: result.discipline_id,
+        value: parseFloat(result.value)
+      });
+      setEditingResult(null);
+      loadData();
+      showMessage('Resultat aktualisiert');
+    } catch (err) {
+      showMessage(err.message, 'error');
+    }
+  };
+
+  const handleDeleteResult = async (id) => {
+    if (!confirm('Resultat wirklich löschen?')) return;
+    try {
+      await api.deleteResult(id);
+      loadData();
+      showMessage('Resultat gelöscht');
+    } catch (err) {
+      showMessage(err.message, 'error');
+    }
+  };
+
+  const filteredResults = results.filter(r => {
+    if (resultsFilter.discipline && r.discipline_id !== parseInt(resultsFilter.discipline)) return false;
+    if (resultsFilter.color && r.group_color !== resultsFilter.color) return false;
+    return true;
+  });
 
   return (
     <div className="admin-page">
@@ -337,6 +374,118 @@ function Admin() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Resultate verwalten */}
+      <section className="admin-section">
+        <h2>Resultate verwalten</h2>
+
+        <div className="results-filters">
+          <select
+            value={resultsFilter.discipline}
+            onChange={(e) => setResultsFilter({ ...resultsFilter, discipline: e.target.value })}
+          >
+            <option value="">Alle Posten</option>
+            {disciplines.map(disc => (
+              <option key={disc.id} value={disc.id}>{disc.name}</option>
+            ))}
+          </select>
+          <select
+            value={resultsFilter.color}
+            onChange={(e) => setResultsFilter({ ...resultsFilter, color: e.target.value })}
+          >
+            <option value="">Alle Farben</option>
+            {config.colors.map(color => (
+              <option key={color} value={color}>{color}</option>
+            ))}
+          </select>
+          <span className="results-count">{filteredResults.length} Resultate</span>
+        </div>
+
+        <table className="data-table results-table">
+          <thead>
+            <tr>
+              <th>Posten</th>
+              <th>Gruppe</th>
+              <th>Farbe</th>
+              <th>Wert</th>
+              <th>Erfasst</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredResults.map(result => (
+              <tr key={result.id}>
+                <td>{result.discipline_name}</td>
+                <td>{result.group_name}</td>
+                <td>
+                  <span className={`color-badge color-${result.group_color.toLowerCase()}`}>
+                    {result.group_color}
+                  </span>
+                </td>
+                <td>
+                  {editingResult === result.id ? (
+                    <input
+                      type="number"
+                      step="any"
+                      defaultValue={result.value}
+                      className="edit-value-input"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateResult({ ...result, value: e.target.value });
+                        } else if (e.key === 'Escape') {
+                          setEditingResult(null);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value !== String(result.value)) {
+                          handleUpdateResult({ ...result, value: e.target.value });
+                        } else {
+                          setEditingResult(null);
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="editable-value"
+                      onClick={() => setEditingResult(result.id)}
+                      title="Klicken zum Bearbeiten"
+                    >
+                      {result.value}
+                    </span>
+                  )}
+                </td>
+                <td className="time-cell">
+                  {new Date(result.created_at).toLocaleString('de-CH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </td>
+                <td>
+                  <button
+                    className="btn-small"
+                    onClick={() => setEditingResult(result.id)}
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    className="btn-danger btn-small"
+                    onClick={() => handleDeleteResult(result.id)}
+                  >
+                    Löschen
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filteredResults.length === 0 && (
+          <p className="no-results">Keine Resultate gefunden.</p>
+        )}
       </section>
     </div>
   );

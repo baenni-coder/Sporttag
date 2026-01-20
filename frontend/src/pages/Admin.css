@@ -192,6 +192,85 @@
   color: #e74c3c;
 }
 
+/* Results management */
+.results-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.results-filters select {
+  min-width: 150px;
+}
+
+.results-count {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.results-table .editable-value {
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.results-table .editable-value:hover {
+  background: #e3f2fd;
+}
+
+.edit-value-input {
+  width: 80px !important;
+  padding: 0.25rem !important;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+}
+
+.time-cell {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.no-results {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+.color-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.color-blau {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.color-grün {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.color-rot {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.color-gelb {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .groups-forms {
@@ -205,5 +284,14 @@
 
   .form-row {
     flex-direction: column;
+  }
+
+  .results-table {
+    font-size: 0.85rem;
+  }
+
+  .results-table th,
+  .results-table td {
+    padding: 0.4rem;
   }
 }
