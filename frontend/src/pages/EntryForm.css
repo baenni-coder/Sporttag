@@ -1,10 +1,17 @@
 .entry-form-page {
   width: 100%;
   max-width: 600px;
-  min-width: 0;
   margin: 0 auto;
   padding-bottom: 2rem;
   box-sizing: border-box;
+}
+
+/* Feste Breite auf grösseren Bildschirmen */
+@media (min-width: 632px) {
+  .entry-form-page {
+    width: 600px;
+    min-width: 600px;
+  }
 }
 
 .entry-form-page h1 {
