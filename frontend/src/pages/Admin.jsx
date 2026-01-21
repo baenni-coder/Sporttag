@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import * as api from '../api';
 import './Admin.css';
 
+const ADMIN_SESSION_KEY = 'sporttag_admin_session';
+
 function Admin() {
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  // Data state
   const [config, setConfig] = useState({ event_name: '', event_date: '', colors: [] });
   const [disciplines, setDisciplines] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -14,10 +22,40 @@ function Admin() {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [resultsFilter, setResultsFilter] = useState({ discipline: '', color: '' });
   const [editingResult, setEditingResult] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
-    loadData();
+    // Check if already authenticated in this session
+    const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
+    if (session === 'true') {
+      setIsAuthenticated(true);
+      loadData();
+    }
   }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+
+    try {
+      const isValid = await api.verifyAdminPassword(passwordInput);
+      if (isValid) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        setPasswordInput('');
+        loadData();
+      } else {
+        setAuthError('Falsches Passwort');
+      }
+    } catch (err) {
+      setAuthError('Fehler bei der Anmeldung');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  };
 
   const loadData = async () => {
     try {
@@ -43,7 +81,12 @@ function Admin() {
 
   const handleConfigSave = async () => {
     try {
-      await api.updateConfig(config);
+      const configToSave = { ...config };
+      if (newPassword) {
+        configToSave.admin_password = newPassword;
+      }
+      await api.updateConfig(configToSave);
+      setNewPassword('');
       showMessage('Konfiguration gespeichert');
     } catch (err) {
       showMessage(err.message, 'error');
@@ -163,15 +206,79 @@ function Admin() {
     }
   };
 
+  const handleResetResults = async () => {
+    const confirmText = `Wirklich ALLE ${results.length} Resultate löschen?\n\nDie Gruppen und Disziplinen bleiben erhalten.`;
+    if (!confirm(confirmText)) return;
+
+    try {
+      const result = await api.resetResults();
+      loadData();
+      showMessage(`${result.deleted} Resultate gelöscht`);
+    } catch (err) {
+      showMessage(err.message, 'error');
+    }
+  };
+
+  const handleResetAll = async () => {
+    const confirmText = 'ACHTUNG: Wirklich ALLE Daten löschen?\n\n- Alle Resultate\n- Alle Gruppen\n- Alle Disziplinen\n\nDiese Aktion kann nicht rückgängig gemacht werden!';
+    if (!confirm(confirmText)) return;
+
+    // Doppelte Bestätigung
+    const confirmAgain = prompt('Zur Bestätigung "LÖSCHEN" eingeben:');
+    if (confirmAgain !== 'LÖSCHEN') {
+      showMessage('Abgebrochen', 'error');
+      return;
+    }
+
+    try {
+      const result = await api.resetAll();
+      loadData();
+      showMessage(`Gelöscht: ${result.deleted.results} Resultate, ${result.deleted.groups} Gruppen, ${result.deleted.disciplines} Disziplinen`);
+    } catch (err) {
+      showMessage(err.message, 'error');
+    }
+  };
+
   const filteredResults = results.filter(r => {
     if (resultsFilter.discipline && r.discipline_id !== resultsFilter.discipline) return false;
     if (resultsFilter.color && r.group_color !== resultsFilter.color) return false;
     return true;
   });
 
+  // Login Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-page">
+        <div className="login-container">
+          <h1>Admin-Bereich</h1>
+          <p>Bitte Passwort eingeben:</p>
+
+          <form onSubmit={handleLogin} className="login-form">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="Passwort"
+              autoFocus
+            />
+            <button type="submit" className="btn-primary">Anmelden</button>
+          </form>
+
+          {authError && <p className="auth-error">{authError}</p>}
+
+          <p className="login-hint">Standard-Passwort: admin123</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin Dashboard
   return (
     <div className="admin-page">
-      <h1>Admin-Bereich</h1>
+      <div className="admin-header">
+        <h1>Admin-Bereich</h1>
+        <button className="btn-logout" onClick={handleLogout}>Abmelden</button>
+      </div>
 
       {message.text && (
         <div className={`message ${message.type}`}>{message.text}</div>
@@ -217,6 +324,18 @@ function Admin() {
               onChange={(e) => setNewColor(e.target.value)}
             />
             <button onClick={handleAddColor}>Hinzufügen</button>
+          </div>
+        </div>
+
+        <div className="password-section">
+          <h3>Admin-Passwort ändern</h3>
+          <div className="form-row">
+            <input
+              type="password"
+              placeholder="Neues Passwort (leer = unverändert)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
           </div>
         </div>
 
@@ -486,6 +605,30 @@ function Admin() {
         {filteredResults.length === 0 && (
           <p className="no-results">Keine Resultate gefunden.</p>
         )}
+      </section>
+
+      {/* Daten zurücksetzen */}
+      <section className="admin-section danger-zone">
+        <h2>Daten zurücksetzen</h2>
+        <p className="hint">Für den nächsten Sporttag können hier die Daten zurückgesetzt werden.</p>
+
+        <div className="reset-buttons">
+          <div className="reset-option">
+            <h3>Nur Resultate löschen</h3>
+            <p>Löscht alle erfassten Resultate. Gruppen und Disziplinen bleiben erhalten.</p>
+            <button className="btn-warning" onClick={handleResetResults}>
+              Alle Resultate löschen ({results.length})
+            </button>
+          </div>
+
+          <div className="reset-option">
+            <h3>Alles löschen</h3>
+            <p>Löscht alle Daten: Resultate, Gruppen und Disziplinen. Nur Event-Konfiguration bleibt.</p>
+            <button className="btn-danger" onClick={handleResetAll}>
+              Kompletter Reset
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   );
