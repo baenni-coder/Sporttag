@@ -1,7 +1,10 @@
 .entry-form-page {
+  width: 100%;
   max-width: 600px;
+  min-width: 0;
   margin: 0 auto;
   padding-bottom: 2rem;
+  box-sizing: border-box;
 }
 
 .entry-form-page h1 {
@@ -70,6 +73,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  width: 100%;
 }
 
 .discipline-info h1 {
@@ -103,6 +107,7 @@
   border-radius: 12px;
   margin-bottom: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
 .form-section h2 {
@@ -295,6 +300,7 @@
 /* Recent entries */
 .recent-section {
   margin-top: 1.5rem;
+  width: 100%;
 }
 
 .recent-section h3 {
