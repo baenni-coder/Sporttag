@@ -34,17 +34,23 @@ export async function getConfig() {
   const docRef = doc(db, COLLECTIONS.CONFIG, 'event');
   const docSnap = await getDoc(docRef);
 
-  if (docSnap.exists()) {
-    return docSnap.data();
-  }
-
-  // Standard-Konfiguration erstellen falls nicht vorhanden
   const defaultConfig = {
     event_name: 'Sporttag',
     event_date: null,
     colors: ['Blau', 'Grün'],
     admin_password: 'admin123' // Standard-Passwort, sollte geändert werden!
   };
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    // Fehlende Felder mit Standardwerten ergänzen (für Migration)
+    return {
+      ...defaultConfig,
+      ...data
+    };
+  }
+
+  // Standard-Konfiguration erstellen falls nicht vorhanden
   await setDoc(docRef, defaultConfig);
   return defaultConfig;
 }
