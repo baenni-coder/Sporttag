@@ -3,6 +3,7 @@
 export {
   getConfig,
   updateConfig,
+  verifyAdminPassword,
   getDisciplines,
   createDiscipline,
   updateDiscipline,
@@ -14,5 +15,7 @@ export {
   getResults,
   submitResult,
   deleteResult,
-  getRankings
+  getRankings,
+  resetResults,
+  resetAll
 } from './firebase';

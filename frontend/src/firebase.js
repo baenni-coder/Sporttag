@@ -42,7 +42,8 @@ export async function getConfig() {
   const defaultConfig = {
     event_name: 'Sporttag',
     event_date: null,
-    colors: ['Blau', 'Grün']
+    colors: ['Blau', 'Grün'],
+    admin_password: 'admin123' // Standard-Passwort, sollte geändert werden!
   };
   await setDoc(docRef, defaultConfig);
   return defaultConfig;
@@ -50,12 +51,22 @@ export async function getConfig() {
 
 export async function updateConfig(data) {
   const docRef = doc(db, COLLECTIONS.CONFIG, 'event');
-  await setDoc(docRef, {
+  const updateData = {
     event_name: data.event_name,
     event_date: data.event_date || null,
     colors: data.colors || []
-  }, { merge: true });
+  };
+  // Passwort nur aktualisieren wenn angegeben
+  if (data.admin_password) {
+    updateData.admin_password = data.admin_password;
+  }
+  await setDoc(docRef, updateData, { merge: true });
   return { success: true };
+}
+
+export async function verifyAdminPassword(password) {
+  const config = await getConfig();
+  return config.admin_password === password;
 }
 
 // ============ DISCIPLINES ============
@@ -316,5 +327,46 @@ export async function getRankings() {
     rankings,
     disciplines: disciplinesData,
     groups: groupsData
+  };
+}
+
+// ============ RESET FUNCTIONS ============
+
+export async function resetResults() {
+  // Alle Resultate löschen
+  const resultsSnapshot = await getDocs(collection(db, COLLECTIONS.RESULTS));
+  const batch = writeBatch(db);
+
+  resultsSnapshot.docs.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+  return { success: true, deleted: resultsSnapshot.docs.length };
+}
+
+export async function resetAll() {
+  // Alle Resultate, Gruppen und Disziplinen löschen
+  const [resultsSnapshot, groupsSnapshot, disciplinesSnapshot] = await Promise.all([
+    getDocs(collection(db, COLLECTIONS.RESULTS)),
+    getDocs(collection(db, COLLECTIONS.GROUPS)),
+    getDocs(collection(db, COLLECTIONS.DISCIPLINES))
+  ]);
+
+  const batch = writeBatch(db);
+
+  resultsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+  groupsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+  disciplinesSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+  await batch.commit();
+
+  return {
+    success: true,
+    deleted: {
+      results: resultsSnapshot.docs.length,
+      groups: groupsSnapshot.docs.length,
+      disciplines: disciplinesSnapshot.docs.length
+    }
   };
 }
