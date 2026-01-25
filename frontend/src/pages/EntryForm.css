@@ -42,6 +42,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  color: #333;
 }
 
 .discipline-card:hover {
@@ -115,6 +116,7 @@
   margin-bottom: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   width: 100%;
+  color: #333;
 }
 
 .form-section h2 {
@@ -208,6 +210,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
+  color: #333;
 }
 
 .group-card:not(:disabled):hover {
@@ -323,6 +326,7 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  color: #333;
 }
 
 .recent-item {
