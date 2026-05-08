@@ -14,6 +14,7 @@ export {
   deleteGroup,
   getResults,
   submitResult,
+  updateResult,
   deleteResult,
   getRankings,
   resetResults,

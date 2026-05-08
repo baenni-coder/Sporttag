@@ -180,13 +180,38 @@ function Admin() {
     }
   };
 
-  const handleUpdateResult = async (result) => {
+  const toDateTimeLocal = (date) => {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const startEditResult = (result) => {
+    setEditingResult({
+      id: result.id,
+      group_id: result.group_id,
+      discipline_id: result.discipline_id,
+      value: result.value,
+      created_at_original: result.created_at,
+      created_at: toDateTimeLocal(result.created_at)
+    });
+  };
+
+  const handleUpdateResult = async () => {
+    if (!editingResult) return;
     try {
-      await api.submitResult({
-        group_id: result.group_id,
-        discipline_id: result.discipline_id,
-        value: parseFloat(result.value)
-      });
+      const originalLocal = toDateTimeLocal(editingResult.created_at_original);
+      const payload = {
+        group_id: editingResult.group_id,
+        discipline_id: editingResult.discipline_id,
+        value: parseFloat(editingResult.value)
+      };
+      // Zeitstempel nur senden, wenn er manuell geändert wurde
+      if (editingResult.created_at && editingResult.created_at !== originalLocal) {
+        payload.created_at = editingResult.created_at;
+      }
+      await api.updateResult(editingResult.id, payload);
       setEditingResult(null);
       loadData();
       showMessage('Resultat aktualisiert');
@@ -533,72 +558,126 @@ function Admin() {
             </tr>
           </thead>
           <tbody>
-            {filteredResults.map(result => (
-              <tr key={result.id}>
-                <td>{result.discipline_name}</td>
-                <td>{result.group_name}</td>
-                <td>
-                  <span className={`color-badge color-${result.group_color.toLowerCase()}`}>
-                    {result.group_color}
-                  </span>
-                </td>
-                <td>
-                  {editingResult === result.id ? (
-                    <input
-                      type="number"
-                      step="any"
-                      defaultValue={result.value}
-                      className="edit-value-input"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleUpdateResult({ ...result, value: e.target.value });
-                        } else if (e.key === 'Escape') {
-                          setEditingResult(null);
+            {filteredResults.map(result => {
+              const isEditing = editingResult?.id === result.id;
+              const editingGroup = isEditing
+                ? groups.find(g => g.id === editingResult.group_id)
+                : null;
+              const editingColor = editingGroup?.color || result.group_color;
+              return (
+                <tr key={result.id}>
+                  <td>
+                    {isEditing ? (
+                      <select
+                        value={editingResult.discipline_id}
+                        onChange={(e) =>
+                          setEditingResult({ ...editingResult, discipline_id: e.target.value })
                         }
-                      }}
-                      onBlur={(e) => {
-                        if (e.target.value !== String(result.value)) {
-                          handleUpdateResult({ ...result, value: e.target.value });
-                        } else {
-                          setEditingResult(null);
+                      >
+                        {disciplines.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      result.discipline_name
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <select
+                        value={editingResult.group_id}
+                        onChange={(e) =>
+                          setEditingResult({ ...editingResult, group_id: e.target.value })
                         }
-                      }}
-                      autoFocus
-                    />
-                  ) : (
-                    <span
-                      className="editable-value"
-                      onClick={() => setEditingResult(result.id)}
-                      title="Klicken zum Bearbeiten"
-                    >
-                      {result.value}
+                      >
+                        {groups.map(g => (
+                          <option key={g.id} value={g.id}>
+                            {g.name} ({g.color})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      result.group_name
+                    )}
+                  </td>
+                  <td>
+                    <span className={`color-badge color-${editingColor.toLowerCase()}`}>
+                      {editingColor}
                     </span>
-                  )}
-                </td>
-                <td className="time-cell">
-                  {new Date(result.created_at).toLocaleString('de-CH', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </td>
-                <td>
-                  <button
-                    className="btn-small"
-                    onClick={() => setEditingResult(result.id)}
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    className="btn-danger btn-small"
-                    onClick={() => handleDeleteResult(result.id)}
-                  >
-                    Löschen
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editingResult.value}
+                        onChange={(e) =>
+                          setEditingResult({ ...editingResult, value: e.target.value })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdateResult();
+                          else if (e.key === 'Escape') setEditingResult(null);
+                        }}
+                        className="edit-value-input"
+                      />
+                    ) : (
+                      <span
+                        className="editable-value"
+                        onClick={() => startEditResult(result)}
+                        title="Klicken zum Bearbeiten"
+                      >
+                        {result.value}
+                      </span>
+                    )}
+                  </td>
+                  <td className="time-cell">
+                    {isEditing ? (
+                      <input
+                        type="datetime-local"
+                        value={editingResult.created_at}
+                        onChange={(e) =>
+                          setEditingResult({ ...editingResult, created_at: e.target.value })
+                        }
+                      />
+                    ) : (
+                      new Date(result.created_at).toLocaleString('de-CH', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <>
+                        <button className="btn-small btn-primary" onClick={handleUpdateResult}>
+                          Speichern
+                        </button>
+                        <button className="btn-small" onClick={() => setEditingResult(null)}>
+                          Abbrechen
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="btn-small"
+                          onClick={() => startEditResult(result)}
+                        >
+                          Bearbeiten
+                        </button>
+                        <button
+                          className="btn-danger btn-small"
+                          onClick={() => handleDeleteResult(result.id)}
+                        >
+                          Löschen
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
