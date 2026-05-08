@@ -252,6 +252,38 @@ export async function submitResult(data) {
   }
 }
 
+export async function updateResult(id, data) {
+  // Konflikt prüfen: Anderes Resultat mit gleicher Kombination Posten/Gruppe?
+  const resultsSnapshot = await getDocs(collection(db, COLLECTIONS.RESULTS));
+  let conflict = false;
+  resultsSnapshot.docs.forEach(d => {
+    if (d.id === id) return;
+    const docData = d.data();
+    if (docData.group_id === data.group_id && docData.discipline_id === data.discipline_id) {
+      conflict = true;
+    }
+  });
+
+  if (conflict) {
+    throw new Error('Für diese Kombination Posten/Gruppe existiert bereits ein Resultat.');
+  }
+
+  const updateData = {
+    group_id: data.group_id,
+    discipline_id: data.discipline_id,
+    value: parseFloat(data.value)
+  };
+  if (data.created_at) {
+    const parsed = new Date(data.created_at);
+    if (!isNaN(parsed.getTime())) {
+      updateData.created_at = parsed;
+    }
+  }
+
+  await updateDoc(doc(db, COLLECTIONS.RESULTS, id), updateData);
+  return { success: true };
+}
+
 export async function deleteResult(id) {
   await deleteDoc(doc(db, COLLECTIONS.RESULTS, id));
   return { success: true };

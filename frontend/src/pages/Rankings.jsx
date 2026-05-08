@@ -91,6 +91,25 @@ function Rankings() {
         </div>
       ) : (
         <>
+          {(() => {
+            const totalEntries = data.rankings.reduce(
+              (sum, item) => sum + Object.keys(item.disciplineResults).length,
+              0
+            );
+            const expectedEntries = data.groups.length * data.disciplines.length;
+            return (
+              <div className="entry-count">
+                <strong>{totalEntries}</strong>
+                {expectedEntries > 0 && <> von {expectedEntries}</>} Einträgen erfasst
+                {expectedEntries > 0 && totalEntries !== expectedEntries && (
+                  <span className="entry-count-diff">
+                    {' '}({expectedEntries - totalEntries} fehlen)
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Podium für Top 3 */}
           <div className="podium">
             {data.rankings.slice(0, 3).map((item, idx) => (
